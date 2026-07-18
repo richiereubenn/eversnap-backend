@@ -1,5 +1,5 @@
 from flask import Flask
-from app.extensions import db, jwt, migrate, ma, init_rq
+from app.extensions import db, jwt, migrate, ma, limiter, init_rq
 from app.config import Config
 import os
 
@@ -17,6 +17,7 @@ def create_app(config_class=Config):
     jwt.init_app(app)
     migrate.init_app(app, db)
     ma.init_app(app)
+    limiter.init_app(app)  # Rate limiter menggunakan Redis sebagai storage
 
     # Init RQ (Redis Queue) untuk background job processing
     try:

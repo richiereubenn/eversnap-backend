@@ -7,6 +7,7 @@ from flask_jwt_extended import (
 )
 from marshmallow import ValidationError
 
+from app.extensions import limiter
 from app.features.auth.schema import user_schema
 from app.features.auth.service import AuthService
 
@@ -14,6 +15,7 @@ auth_bp = Blueprint("auth", __name__)
 
 
 @auth_bp.route("/register", methods=["POST"])
+@limiter.limit("5 per minute")   # Ketat: cegah spam pembuatan akun admin
 def register():
     """POST /api/auth/register — Daftar akun admin baru."""
     data = request.get_json(silent=True) or {}
@@ -31,6 +33,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("10 per minute")  # Ketat: cegah brute-force tebak password
 def login():
     """POST /api/auth/login — Login dan dapat JWT."""
     data     = request.get_json(silent=True) or {}

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from app.extensions import limiter
 from app.features.events.schema import event_schema, events_schema
 from app.features.events.service import EventService
 
@@ -18,6 +19,7 @@ def list_events():
 
 @events_bp.route("", methods=["POST"])
 @jwt_required()
+@limiter.limit("20 per minute")  # Sedang: admin tidak butuh buat banyak event dalam waktu singkat
 def create_event():
     """POST /api/events — Buat event baru."""
     user_id = int(get_jwt_identity())
@@ -65,6 +67,7 @@ def delete_event(event_id):
 
 @events_bp.route("/<int:event_id>/qr", methods=["GET"])
 @jwt_required()
+@limiter.limit("10 per minute")  # Ketat: operasi I/O berat (generate & simpan file PNG)
 def get_qr(event_id):
     """GET /api/events/<id>/qr — Generate / ambil QR code event."""
     user_id = int(get_jwt_identity())

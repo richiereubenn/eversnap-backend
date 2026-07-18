@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from app.extensions import limiter
 from app.features.events.service import EventService
 from app.features.quests.schema import quest_schema, quests_schema
 from app.features.quests.service import QuestService
@@ -57,6 +58,7 @@ def list_quests(event_id):
 
 @quests_bp.route("/<int:event_id>/quests", methods=["POST"])
 @jwt_required()
+@limiter.limit("30 per minute")  # Sedang: operasi write ke DB
 def create_quest(event_id):
     """POST /api/events/<event_id>/quests — Buat quest baru."""
     user_id = int(get_jwt_identity())
@@ -82,6 +84,7 @@ def get_quest(event_id, quest_id):
 
 @quests_bp.route("/<int:event_id>/quests/<int:quest_id>", methods=["PUT"])
 @jwt_required()
+@limiter.limit("30 per minute")  # Sedang: operasi write ke DB
 def update_quest(event_id, quest_id):
     """PUT /api/events/<event_id>/quests/<quest_id> — Edit quest."""
     user_id = int(get_jwt_identity())
@@ -98,6 +101,7 @@ def update_quest(event_id, quest_id):
 
 @quests_bp.route("/<int:event_id>/quests/<int:quest_id>", methods=["DELETE"])
 @jwt_required()
+@limiter.limit("30 per minute")  # Sedang: operasi write ke DB
 def delete_quest(event_id, quest_id):
     """DELETE /api/events/<event_id>/quests/<quest_id> — Hapus quest."""
     user_id = int(get_jwt_identity())
@@ -111,6 +115,7 @@ def delete_quest(event_id, quest_id):
 
 @quests_bp.route("/<int:event_id>/quests/<int:quest_id>/toggle-active", methods=["PATCH"])
 @jwt_required()
+@limiter.limit("30 per minute")  # Sedang: operasi write ke DB
 def toggle_active(event_id, quest_id):
     """PATCH — Toggle is_active pada quest."""
     user_id = int(get_jwt_identity())
@@ -127,6 +132,7 @@ def toggle_active(event_id, quest_id):
 
 @quests_bp.route("/<int:event_id>/quests/reorder", methods=["PATCH"])
 @jwt_required()
+@limiter.limit("30 per minute")  # Sedang: operasi write ke DB
 def reorder_quests(event_id):
     """PATCH — Reorder quests: body = [{id, order_number}, ...]."""
     user_id = int(get_jwt_identity())

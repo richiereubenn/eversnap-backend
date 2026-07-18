@@ -37,8 +37,9 @@ class Config:
     BASE_URL = os.environ.get("BASE_URL", "http://localhost:5000")
 
     # Redis
-    REDIS_URL             = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-    REDIS_EVENT_CACHE_TTL = int(os.environ.get("REDIS_EVENT_CACHE_TTL", 3600))  # 1 jam
+    REDIS_URL              = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_EVENT_CACHE_TTL  = int(os.environ.get("REDIS_EVENT_CACHE_TTL", 3600))  # 1 jam
+    RATELIMIT_STORAGE_URI  = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
     # RQ (Redis Queue) - Background Job
     RQ_QUEUE_NAME    = os.environ.get("RQ_QUEUE_NAME", "eversnap-images")

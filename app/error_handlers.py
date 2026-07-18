@@ -2,6 +2,7 @@ import logging
 from flask import jsonify
 from marshmallow import ValidationError
 from werkzeug.exceptions import HTTPException
+from flask_limiter.errors import RateLimitExceeded
 
 from app.features.auth.exceptions import (
     EmailAlreadyExistsError,
@@ -72,6 +73,14 @@ def register_error_handlers(app):
     @app.errorhandler(HTTPException)
     def handle_http_exception(error):
         return jsonify({"error": error.description}), error.code
+
+    # ── 429 Too Many Requests (Rate Limit) ─────────────────────
+    @app.errorhandler(RateLimitExceeded)
+    def handle_rate_limit_exceeded(error):
+        return jsonify({
+            "error": "Too many requests. Please slow down.",
+            "limit": str(error.description),
+        }), 429
 
     # ── 500 Catch-all ──────────────────────────────────────────
     @app.errorhandler(Exception)

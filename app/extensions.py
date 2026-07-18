@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import redis
 from rq import Queue
 
@@ -9,6 +11,12 @@ db      = SQLAlchemy()
 jwt     = JWTManager()
 migrate = Migrate()
 ma      = Marshmallow()
+
+# Rate limiter — storage backend (Redis) diinisialisasi di create_app()
+limiter = Limiter(
+    key_func=get_remote_address,        # Batasi berdasarkan IP pengirim request
+    default_limits=["100 per minute"],  # Batas global untuk semua endpoint
+)
 
 # Diinisialisasi di create_app() menggunakan init_rq()
 rq_queue: Queue | None = None
