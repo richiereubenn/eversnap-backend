@@ -37,8 +37,13 @@ class Config:
     BASE_URL = os.environ.get("BASE_URL", "http://localhost:5000")
 
     # Redis
-    REDIS_URL            = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    REDIS_URL             = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
     REDIS_EVENT_CACHE_TTL = int(os.environ.get("REDIS_EVENT_CACHE_TTL", 3600))  # 1 jam
+
+    # RQ (Redis Queue) - Background Job
+    RQ_QUEUE_NAME    = os.environ.get("RQ_QUEUE_NAME", "eversnap-images")
+    THUMBNAIL_WIDTH  = int(os.environ.get("THUMBNAIL_WIDTH", 400))   # px
+    COMPRESS_QUALITY = int(os.environ.get("COMPRESS_QUALITY", 85))   # 1-95
 
 
 class DevelopmentConfig(Config):

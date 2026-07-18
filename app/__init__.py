@@ -1,7 +1,8 @@
 from flask import Flask
-from app.extensions import db, jwt, migrate, ma
+from app.extensions import db, jwt, migrate, ma, init_rq
 from app.config import Config
 import os
+
 
 
 def create_app(config_class=Config):
@@ -16,6 +17,12 @@ def create_app(config_class=Config):
     jwt.init_app(app)
     migrate.init_app(app, db)
     ma.init_app(app)
+
+    # Init RQ (Redis Queue) untuk background job processing
+    try:
+        init_rq(app.config["REDIS_URL"], app.config["RQ_QUEUE_NAME"])
+    except Exception as e:
+        app.logger.warning(f"[RQ] Failed to connect to Redis for job queue: {e}")
 
     # Import semua model agar SQLAlchemy mendaftarkannya sebelum dipakai
     from app.features.auth.model import User       # noqa: F401

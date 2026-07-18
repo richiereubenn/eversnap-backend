@@ -67,6 +67,6 @@ def upload_photo(guest_id, quest_id):
 
     from app.features.photos.schema import photo_schema
     return jsonify({
-        "message": "Photo uploaded successfully",
+        "message": "Photo accepted and is being processed in the background.",
         "photo":   photo_schema.dump(photo),
-    }), 201
+    }), 202

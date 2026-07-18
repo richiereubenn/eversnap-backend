@@ -7,7 +7,9 @@ class Photo(db.Model):
 
     id              = db.Column(db.Integer, primary_key=True)
     guest_quest_id  = db.Column(db.Integer, db.ForeignKey("guest_quests.id"), nullable=False)
-    url             = db.Column(db.String(300), nullable=False)
+    url             = db.Column(db.String(300), nullable=False)          # Foto asli
+    thumbnail_url   = db.Column(db.String(300), nullable=True)           # Thumbnail (diisi setelah job selesai)
+    status          = db.Column(db.String(20), default="pending")        # pending | done | failed
     file_size       = db.Column(db.Integer, nullable=True)
     created_at      = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -15,4 +17,4 @@ class Photo(db.Model):
     guest_quest = db.relationship("GuestQuest", back_populates="photos")
 
     def __repr__(self) -> str:
-        return f"<Photo {self.id}>"
+        return f"<Photo {self.id} status={self.status}>"

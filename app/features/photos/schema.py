@@ -9,14 +9,22 @@ class PhotoSchema(ma.SQLAlchemyAutoSchema):
         model = Photo
         load_instance = True
         exclude = ("guest_quest_id",)
-        dump_only = ("id", "created_at")
+        dump_only = ("id", "created_at", "status")
 
-    # Return full URL for the photo
+    # Return full URL untuk foto asli
     photo_url = fields.Method("get_photo_url", dump_only=True)
+
+    # Return full URL untuk thumbnail (None jika job masih pending)
+    thumbnail_url = fields.Method("get_thumbnail_url", dump_only=True)
 
     def get_photo_url(self, obj: Photo):
         if obj.url:
             return f"{current_app.config['BASE_URL']}/uploads/{obj.url}"
+        return None
+
+    def get_thumbnail_url(self, obj: Photo):
+        if obj.thumbnail_url:
+            return f"{current_app.config['BASE_URL']}/uploads/{obj.thumbnail_url}"
         return None
 
 
