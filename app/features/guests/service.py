@@ -28,7 +28,9 @@ class GuestService:
         EventService.find_public(event_id)
 
         guest = Guest(event_id=event_id, name=name)
-        return GuestRepository.save(guest)
+        saved_guest = GuestRepository.save(guest)
+        current_app.logger.info(f"Guest registered successfully: ID {saved_guest.id}, Name: '{name}', Event ID: {event_id}")
+        return saved_guest
 
     @staticmethod
     def get_or_404(guest_id: int) -> Guest:
@@ -104,6 +106,7 @@ class GuestService:
         # Simpan file via shared upload util
         relative_path = save_upload(file, "photos", prefix=f"g{guest_id}_q{quest_id}")
         if not relative_path:
+            current_app.logger.warning(f"Failed photo upload: Invalid file format from Guest ID: {guest_id}, Quest ID: {quest_id}")
             raise ValueError("Invalid file. Allowed: png, jpg, jpeg, gif, webp")
 
         photo = Photo(
@@ -111,4 +114,6 @@ class GuestService:
             url=relative_path,
             file_size=file.content_length or None,
         )
-        return PhotoRepository.save(photo)
+        saved_photo = PhotoRepository.save(photo)
+        current_app.logger.info(f"Photo uploaded successfully: ID {saved_photo.id}, Guest ID: {guest_id}, Quest ID: {quest_id}, Path: '{relative_path}'")
+        return saved_photo

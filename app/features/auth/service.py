@@ -1,3 +1,4 @@
+from flask import current_app
 from app.features.auth.model import User
 from app.features.auth.repository import UserRepository
 from app.features.auth.exceptions import (
@@ -18,13 +19,17 @@ class AuthService:
         Raises EmailAlreadyExistsError / UsernameAlreadyTakenError jika duplikat.
         """
         if UserRepository.find_by_email(data["email"]):
+            current_app.logger.warning(f"Registration failed: Email '{data['email']}' already exists")
             raise EmailAlreadyExistsError()
         if UserRepository.find_by_username(data["username"]):
+            current_app.logger.warning(f"Registration failed: Username '{data['username']}' already taken")
             raise UsernameAlreadyTakenError()
 
         user = User(username=data["username"], email=data["email"])
         user.set_password(data["password"])
-        return UserRepository.save(user)
+        saved_user = UserRepository.save(user)
+        current_app.logger.info(f"Admin registered successfully: ID {saved_user.id}, Username: '{saved_user.username}', Email: '{saved_user.email}'")
+        return saved_user
 
     @staticmethod
     def authenticate(email: str, password: str) -> User:
@@ -34,7 +39,9 @@ class AuthService:
         """
         user = UserRepository.find_by_email(email)
         if not user or not user.check_password(password):
+            current_app.logger.warning(f"Failed login attempt for email: '{email}'")
             raise InvalidCredentialsError()
+        current_app.logger.info(f"User login successful for email: '{email}', User ID: {user.id}")
         return user
 
     @staticmethod
@@ -44,3 +51,4 @@ class AuthService:
         if not user:
             raise UserNotFoundError()
         return user
+

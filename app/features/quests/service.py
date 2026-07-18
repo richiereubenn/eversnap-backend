@@ -1,3 +1,4 @@
+from flask import current_app
 from app.features.quests.model import Quest
 from app.features.quests.repository import QuestRepository
 from app.features.quests.exceptions import QuestNotFoundError
@@ -23,18 +24,26 @@ class QuestService:
     def create(quest: Quest, event_id: int) -> Quest:
         """Simpan quest baru."""
         quest.event_id = event_id
-        return QuestRepository.save(quest)
+        saved_quest = QuestRepository.save(quest)
+        current_app.logger.info(f"Quest created successfully: ID {saved_quest.id}, Title: '{saved_quest.title}', Event ID: {event_id}")
+        return saved_quest
 
     @staticmethod
     def update(quest: Quest, event_id: int) -> Quest:
         """Commit perubahan quest."""
         QuestRepository.commit()
+        current_app.logger.info(f"Quest updated successfully: ID {quest.id}, Title: '{quest.title}', Event ID: {event_id}")
         return quest
 
     @staticmethod
     def delete(quest: Quest) -> None:
         """Hapus quest dari database."""
+        quest_id = quest.id
+        quest_title = quest.title
+        event_id = quest.event_id
         QuestRepository.delete(quest)
+        current_app.logger.info(f"Quest deleted successfully: ID {quest_id}, Title: '{quest_title}', Event ID: {event_id}")
+
 
     @staticmethod
     def toggle_field(quest: Quest, field: str) -> Quest:
