@@ -48,4 +48,11 @@ def create_app(config_class=Config):
     from app.error_handlers import register_error_handlers
     register_error_handlers(app)
 
+    # Tambahkan header instance untuk memantau load balancing
+    import socket
+    @app.after_request
+    def add_instance_header(response):
+        response.headers["X-Handled-By"] = socket.gethostname()
+        return response
+
     return app

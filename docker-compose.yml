@@ -1,0 +1,84 @@
+services:
+  # 1. PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: eversnap_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eversnap
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. Redis Server (Cache & Queue broker)
+  redis:
+    image: redis:7-alpine
+    container_name: eversnap_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # 3. Flask Web Application (API Server)
+  web:
+    build: .
+    restart: always
+    command: flask run --host=0.0.0.0 --port=5000
+    # Ports dihapus dari host agar tidak bentrok saat diskalakan
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=True
+      - SECRET_KEY=dev-secret-key-change-in-prod
+      - JWT_SECRET_KEY=jwt-secret-key-change-in-production!!
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/eversnap
+      - REDIS_URL=redis://redis:6379/0
+      - BASE_URL=http://localhost:5001
+      - REDIS_EVENT_CACHE_TTL=3600
+    volumes:
+      - .:/app  # Bind mount untuk code hot-reload saat development
+      - ./uploads:/app/uploads  # Media sharing & persistence
+    depends_on:
+      - db
+      - redis
+
+  # 4. Redis Queue (RQ Worker)
+  worker:
+    build: .
+    container_name: eversnap_worker
+    restart: always
+    command: rq worker eversnap-images --url redis://redis:6379/0
+    environment:
+      - FLASK_APP=app.py
+      - SECRET_KEY=dev-secret-key-change-in-prod
+      - JWT_SECRET_KEY=jwt-secret-key-change-in-production!!
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/eversnap
+      - REDIS_URL=redis://redis:6379/0
+      - BASE_URL=http://localhost:5001
+      - REDIS_EVENT_CACHE_TTL=3600
+    volumes:
+      - .:/app  # Bind mount untuk worker agar selalu sinkron dengan kode terbaru
+      - ./uploads:/app/uploads  # Berbagi folder upload untuk processing image
+    depends_on:
+      - db
+      - redis
+
+  # 5. Nginx Load Balancer & Reverse Proxy
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: eversnap_nginx
+    restart: always
+    ports:
+      - "5001:80"  # Mengambil alih port 5001 sebagai gerbang utama
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./uploads:/app/uploads:ro  # Mount folder upload untuk serving static file langsung
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Local databases and SQLite files
+*.db
+*.sqlite3
+
+# Uploads and temporary assets (mounted via volumes)
+uploads/
+
+# IDE files
+.vscode/
+.idea/
+.gemini/
+
+# Environment files
+.env
+.env.development
+.env.production
