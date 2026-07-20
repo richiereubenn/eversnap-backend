@@ -1,10 +1,11 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app.extensions import limiter
 from app.features.events.service import EventService
 from app.features.quests.schema import quest_schema, quests_schema
 from app.features.quests.service import QuestService
+from app.shared.responses import api_response
 
 quests_bp = Blueprint("quests", __name__)
 
@@ -53,7 +54,7 @@ def list_quests(event_id):
     }
 
     quests = QuestService.list_for_event(event_id, filters)
-    return jsonify(quests_schema.dump(quests)), 200
+    return api_response(200, "Quests retrieved successfully", quests_schema.dump(quests))
 
 
 @quests_bp.route("/<int:event_id>/quests", methods=["POST"])
@@ -69,7 +70,7 @@ def create_quest(event_id):
     quest = quest_schema.load(data)  # ValidationError → 422
 
     quest = QuestService.create(quest, event_id)
-    return jsonify({"message": "Quest created", "quest": quest_schema.dump(quest)}), 201
+    return api_response(201, "Quest created", quest_schema.dump(quest))
 
 
 @quests_bp.route("/<int:event_id>/quests/<int:quest_id>", methods=["GET"])
@@ -79,7 +80,7 @@ def get_quest(event_id, quest_id):
     user_id = int(get_jwt_identity())
     EventService.get_or_404(event_id, user_id)
     quest = QuestService.get_or_404(quest_id, event_id)  # QuestNotFoundError → 404
-    return jsonify(quest_schema.dump(quest)), 200
+    return api_response(200, "Quest retrieved successfully", quest_schema.dump(quest))
 
 
 @quests_bp.route("/<int:event_id>/quests/<int:quest_id>", methods=["PUT"])
@@ -96,7 +97,7 @@ def update_quest(event_id, quest_id):
     quest = quest_schema.load(data, instance=quest, partial=True)  # ValidationError → 422
 
     quest = QuestService.update(quest, event_id)
-    return jsonify({"message": "Quest updated", "quest": quest_schema.dump(quest)}), 200
+    return api_response(200, "Quest updated", quest_schema.dump(quest))
 
 
 @quests_bp.route("/<int:event_id>/quests/<int:quest_id>", methods=["DELETE"])
@@ -109,7 +110,7 @@ def delete_quest(event_id, quest_id):
     EventService.ensure_not_started(event)
     quest = QuestService.get_or_404(quest_id, event_id)
     QuestService.delete(quest)
-    return jsonify({"message": "Quest deleted"}), 200
+    return api_response(200, "Quest deleted")
 
 
 
@@ -123,11 +124,10 @@ def toggle_active(event_id, quest_id):
     EventService.ensure_not_started(event)
     quest = QuestService.get_or_404(quest_id, event_id)
     quest = QuestService.toggle_field(quest, "is_active")
-    return jsonify({
-        "message":   f"Quest is_active set to {quest.is_active}",
+    return api_response(200, f"Quest active status toggled", {
         "quest_id":  quest.id,
         "is_active": quest.is_active,
-    }), 200
+    })
 
 
 @quests_bp.route("/<int:event_id>/quests/reorder", methods=["PATCH"])
@@ -141,7 +141,7 @@ def reorder_quests(event_id):
 
     items = request.get_json(silent=True) or []
     if not isinstance(items, list):
-        return jsonify({"error": "Expected a list of {id, order_number}"}), 400
+        return api_response(400, "Expected a list of {id, order_number}")
 
     quests = QuestService.reorder(event_id, items)
-    return jsonify({"message": "Quests reordered", "quests": quests_schema.dump(quests)}), 200
+    return api_response(200, "Quests reordered", quests_schema.dump(quests))

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 
 from app.extensions import limiter
 from app.features.events.service import EventService
@@ -6,6 +6,7 @@ from app.features.events.schema import event_schema
 from app.features.guests.schema import guest_schema
 from app.features.guests.service import GuestService
 from app.features.quests.schema import quests_schema
+from app.shared.responses import api_response
 
 guests_bp = Blueprint("guests", __name__)
 
@@ -22,11 +23,10 @@ def join_event(event_id):
     validated = guest_schema.load(data)  # ValidationError → 422
 
     guest = GuestService.register_guest(event_id, validated.name)
-    return jsonify({
-        "message":  "Welcome! You have joined the event.",
+    return api_response(201, "Welcome! You have joined the event.", {
         "guest":    guest_schema.dump(guest),
         "event_id": event_id,
-    }), 201
+    })
 
 
 # ── View Event Detail ──────────────────────────────────────────────────────────
@@ -36,10 +36,10 @@ def view_event(guest_id):
     """GET /api/guest/<guest_id>/event — Lihat detail event + quest list."""
     guest = GuestService.get_or_404(guest_id)
     event = EventService.find_public(guest.event_id)
-    return jsonify({
+    return api_response(200, "Event detail retrieved successfully", {
         "event":  event_schema.dump(event),
         "guest":  guest_schema.dump(guest),
-    }), 200
+    })
 
 
 # ── View Quest Progress ───────────────────────────────────────────────────────
@@ -49,10 +49,10 @@ def view_quests(guest_id):
     """GET /api/guest/<guest_id>/quests — Lihat semua quest + progress completion."""
     guest    = GuestService.get_or_404(guest_id)
     progress = GuestService.list_quest_progress(guest)
-    return jsonify({
+    return api_response(200, "Quest progress list retrieved successfully", {
         "guest":  guest_schema.dump(guest),
         "quests": progress,
-    }), 200
+    })
 
 # ── Upload Photo ───────────────────────────────────────────────────────────────
 
@@ -63,13 +63,12 @@ def upload_photo(guest_id, quest_id):
     guest = GuestService.get_or_404(guest_id)
 
     if "photo" not in request.files:
-        return jsonify({"error": "No photo file provided. Use key 'photo' in form-data."}), 400
+        return api_response(400, "No photo file provided. Use key 'photo' in form-data.")
 
     file  = request.files["photo"]
     photo = GuestService.upload_photo(guest.id, quest_id, file)
 
     from app.features.photos.schema import photo_schema
-    return jsonify({
-        "message": "Photo accepted and is being processed in the background.",
+    return api_response(202, "Photo accepted and is being processed in the background.", {
         "photo":   photo_schema.dump(photo),
-    }), 202
+    })
