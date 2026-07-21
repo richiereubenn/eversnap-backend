@@ -38,15 +38,23 @@ def create_app(config_class=Config):
     from app.features.events.routes import events_bp
     from app.features.quests.routes import quests_bp
     from app.features.guests.routes import guests_bp
+    from app.features.photos.routes import photos_bp
 
-    app.register_blueprint(auth_bp,   url_prefix="/api/auth")
-    app.register_blueprint(events_bp, url_prefix="/api/events")
-    app.register_blueprint(quests_bp, url_prefix="/api/events")
-    app.register_blueprint(guests_bp, url_prefix="/api/guest")
+    app.register_blueprint(auth_bp,    url_prefix="/api/auth")
+    app.register_blueprint(events_bp,  url_prefix="/api/events")
+    app.register_blueprint(quests_bp,  url_prefix="/api/events")
+    app.register_blueprint(guests_bp,  url_prefix="/api/guest")
+    app.register_blueprint(photos_bp,  url_prefix="/api/events")  # SSE: /api/events/<id>/live
 
     # Register global error handlers
     from app.error_handlers import register_error_handlers
     register_error_handlers(app)
+
+    # Route untuk menyajikan file uploads saat development (tanpa Nginx)
+    from flask import send_from_directory
+    @app.route("/uploads/<path:filename>")
+    def serve_upload(filename):
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     # Tambahkan header instance untuk memantau load balancing
     import socket

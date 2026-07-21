@@ -46,6 +46,12 @@ class Config:
     THUMBNAIL_WIDTH  = int(os.environ.get("THUMBNAIL_WIDTH", 400))   # px
     COMPRESS_QUALITY = int(os.environ.get("COMPRESS_QUALITY", 85))   # 1-95
 
+    # SSE (Server-Sent Events) - Live Photo Wall
+    # Interval dalam detik untuk mengirim heartbeat agar koneksi SSE tidak terputus oleh proxy/firewall
+    SSE_HEARTBEAT_INTERVAL = int(os.environ.get("SSE_HEARTBEAT_INTERVAL", 15))
+    # Prefix channel Redis Pub/Sub untuk live photo feed per event
+    LIVE_CHANNEL_PREFIX    = os.environ.get("LIVE_CHANNEL_PREFIX", "live:event:")
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

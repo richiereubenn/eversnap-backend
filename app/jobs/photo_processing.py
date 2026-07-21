@@ -25,7 +25,7 @@ def process_photo_job(photo_id: int, upload_folder: str, thumbnail_width: int, c
 
     Args:
         photo_id       : ID record Photo di database.
-        upload_folder  : Path absolut ke folder uploads (dari config["UPLOAD_FOLDER"]).
+        upload_folder  : Path absolut ke folder uploads (dari config[\"UPLOAD_FOLDER\"]).
         thumbnail_width: Lebar target thumbnail dalam piksel (contoh: 400).
         compress_quality: Kualitas kompresi JPEG/WebP (1-95, contoh: 85).
         database_url   : URL koneksi database untuk membuat Flask app context.
@@ -105,6 +105,31 @@ def process_photo_job(photo_id: int, upload_folder: str, thumbnail_width: int, c
             db.session.commit()
 
             logger.info(f"[PhotoJob] Selesai: Photo ID {photo_id} status=done, thumbnail={photo.thumbnail_url}")
+
+            # ── 4. Publish ke Redis Pub/Sub untuk Live Photo Wall ───────────
+            # Resolve event_id: photo → guest_quest → guest → event_id
+            try:
+                event_id = photo.guest_quest.guest.event_id
+                base_url = app.config.get("BASE_URL", "")
+                redis_url = app.config.get("REDIS_URL", "redis://localhost:6379/0")
+                channel_prefix = app.config.get("LIVE_CHANNEL_PREFIX", "live:event:")
+
+                photo_data = {
+                    "photo_id":      photo.id,
+                    "photo_url":     f"{base_url}/uploads/{photo.url}",
+                    "thumbnail_url": f"{base_url}/uploads/{photo.thumbnail_url}",
+                    "status":        "done",
+                    "created_at":    str(photo.created_at),
+                    "guest_name":    photo.guest_quest.guest.name,
+                }
+
+                from app.shared.pubsub import publish_photo_event
+                publish_photo_event(redis_url, channel_prefix, event_id, photo_data)
+                logger.info(f"[PhotoJob] Published SSE event ke live:event:{event_id} untuk Photo ID {photo_id}")
+
+            except Exception as pub_err:
+                # Pub/Sub gagal tidak boleh rollback foto yang sudah berhasil diproses
+                logger.warning(f"[PhotoJob] Pub/Sub publish gagal untuk Photo ID {photo_id}: {pub_err}")
 
         except Exception as e:
             logger.exception(f"[PhotoJob] Gagal memproses Photo ID {photo_id}: {e}")

@@ -16,6 +16,7 @@ from app.features.guests.exceptions import (
     GuestNotFoundError,
     GuestQuestNotFoundError,
 )
+from app.features.photos.exceptions import PhotoNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,10 @@ def register_error_handlers(app):
 
     @app.errorhandler(GuestQuestNotFoundError)
     def handle_guest_quest_not_found(error):
+        return api_response(404, str(error))
+
+    @app.errorhandler(PhotoNotFoundError)
+    def handle_photo_not_found(error):
         return api_response(404, str(error))
 
     # ── 403 Forbidden ──────────────────────────────────────────
