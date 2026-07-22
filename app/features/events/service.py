@@ -3,7 +3,7 @@ import json
 import qrcode
 from flask import current_app
 
-from datetime import datetime, timezone
+from datetime import datetime, date, timezone
 
 from app.features.events.model import Event
 from app.features.events.repository import EventRepository
@@ -71,10 +71,24 @@ class EventService:
         cached = cache_get(cache_key)
         if cached is not None:
             current_app.logger.info(f"[Cache] HIT for event {event_id}")
-            # Bangun ulang Event object dari data cache
-            event = EventRepository.find_by_id(event_id)
-            if event:
-                return event
+            # Parse string tanggal dari Redis kembali ke objek date/datetime
+            # Redis hanya bisa menyimpan string, jadi perlu di-parse ulang
+            raw_date         = cached.get("date")
+            raw_start_date   = cached.get("start_date")
+            raw_expired_date = cached.get("expired_date")
+            event = Event(
+                id           = cached.get("id"),
+                name         = cached.get("name"),
+                event_type   = cached.get("event_type"),
+                date         = date.fromisoformat(raw_date) if raw_date else None,
+                location     = cached.get("location"),
+                description  = cached.get("description"),
+                qr_code_path = cached.get("qr_code_path"),
+                start_date   = datetime.fromisoformat(raw_start_date) if raw_start_date else None,
+                expired_date = datetime.fromisoformat(raw_expired_date) if raw_expired_date else None,
+                need_redeem  = cached.get("need_redeem"),
+            )
+            return event
 
         # 2. Cache miss — query ke database
         current_app.logger.info(f"[Cache] MISS for event {event_id}, querying DB")
@@ -82,9 +96,20 @@ class EventService:
         if not event:
             raise EventNotFoundError()
 
-        # 3. Simpan data ringkas ke Redis dengan TTL dari config
+        # 3. Simpan semua field event ke Redis dengan TTL dari config
         ttl = current_app.config.get("REDIS_EVENT_CACHE_TTL", 3600)
-        cache_set(cache_key, {"id": event.id, "name": event.name}, ttl=ttl)
+        cache_set(cache_key, {
+            "id":           event.id,
+            "name":         event.name,
+            "event_type":   event.event_type,
+            "date":         str(event.date) if event.date else None,
+            "location":     event.location,
+            "description":  event.description,
+            "qr_code_path": event.qr_code_path,
+            "start_date":   str(event.start_date) if event.start_date else None,
+            "expired_date": str(event.expired_date) if event.expired_date else None,
+            "need_redeem":  event.need_redeem,
+        }, ttl=ttl)
 
         return event
 
